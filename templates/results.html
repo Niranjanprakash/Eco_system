@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - EcoPlan{% endblock %}
+
+{% block content %}
+<div class="row fade-in-up">
+    <div class="col-12">
+        <h2 class="mb-4 gradient-text"><i class="fas fa-chart-line icon-city"></i> Sustainability Analysis Results</h2>
+    </div>
+</div>
+
+{% for result in results %}
+<!-- Enhanced Sustainability Card -->
+<div class="card mb-4 sustainability-card {{ result.metrics.category.lower() }} hover-lift">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h4 class="mb-0"><i class="fas fa-city icon-city"></i> {{ result.city.name }}</h4>
+                <p class="mb-0 opacity-75">Population: {{ "{:,}".format(result.city.population) }} | Area: {{ result.city.area }} sq km | Density: {{ "{:,.0f}".format(result.city.population_density) }}/sq km</p>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="circular-progress">
+                    <div class="score score-number">{{ result.metrics.sustainability_score }}</div>
+                </div>
+                <small class="text-light mt-2 d-block">Sustainability Score</small>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="badge-{{ result.metrics.category.lower() }}">
+                    {{ result.metrics.badge_level }}
+                </div>
+                <small class="text-light mt-2 d-block">Category</small>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Key Metrics Grid -->
+        <div class="row mb-4 stagger-animation">
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-{{ 'success' if result.metrics.green_space_per_capita >= 9 else 'danger' }}">
+                        {{ "{:.1f}".format(result.metrics.green_space_per_capita) }}
+                    </div>
+                    <div class="metric-label">m² Green Space per Capita</div>
+                    <small class="text-muted">WHO Standard: 9.0 m²</small>
+                    {% if result.metrics.green_space_per_capita < 9 %}
+                        <div class="badge-poor mt-2">{{ "{:.1f}".format(9 - result.metrics.green_space_per_capita) }} m² deficit</div>
+                    {% else %}
+                        <div class="badge-sustainable mt-2">{{ "{:.1f}".format(result.metrics.green_space_per_capita - 9) }} m² surplus</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-{{ 'success' if result.city.aqi <= 50 else 'warning' if result.city.aqi <= 100 else 'danger' }}">
+                        {{ "{:.0f}".format(result.city.aqi) }}
+                    </div>
+                    <div class="metric-label">Air Quality Index</div>
+                    {% if result.city.aqi <= 50 %}
+                        <div class="badge-sustainable mt-2">Good</div>
+                    {% elif result.city.aqi <= 100 %}
+                        <div class="badge-moderate mt-2">Moderate</div>
+                    {% else %}
+                        <div class="badge-poor mt-2">Unhealthy</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-info">{{ "{:.1f}".format(result.metrics.who_standard_compliance) }}%</div>
+                    <div class="metric-label">WHO Compliance</div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar" style="width: {{ result.metrics.who_standard_compliance }}%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-{{ 'success' if result.city.green_coverage_percentage >= 30 else 'warning' if result.city.green_coverage_percentage >= 15 else 'danger' }}">
+                        {{ result.city.green_coverage_percentage }}%
+                    </div>
+                    <div class="metric-label">Green Coverage</div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar" style="width: {{ result.city.green_coverage_percentage }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Analysis Card -->
+<div class="card mb-4 glass-effect">
+    <div class="card-body">
+        <div class="row stagger-animation">
+            <!-- City Overview -->
+            <div class="col-md-4">
+                <div class="metric-card">
+                    <h6 class="gradient-text mb-3"><i class="fas fa-info-circle icon-city"></i> City Overview</h6>
+                    <div class="row g-2">
+                        <div class="col-6"><strong>Population:</strong></div>
+                        <div class="col-6">{{ "{:,}".format(result.city.population) }}</div>
+                        <div class="col-6"><strong>Area:</strong></div>
+                        <div class="col-6">{{ result.city.area }} sq km</div>
+                        <div class="col-6"><strong>Density:</strong></div>
+                        <div class="col-6">{{ "{:,.0f}".format(result.city.population_density) }}/sq km</div>
+                        <div class="col-6"><strong>Built-up:</strong></div>
+                        <div class="col-6">{{ result.city.built_up_percentage }}%</div>
+                        <div class="col-6"><strong>Green Coverage:</strong></div>
+                        <div class="col-6">{{ result.city.green_coverage_percentage }}%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sustainability Metrics -->
+            <div class="col-md-4">
+                <div class="metric-card">
+                    <h6 class="gradient-text mb-3"><i class="fas fa-leaf icon-leaf"></i> Sustainability Metrics</h6>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Sustainability Score:</span>
+                            <span class="metric-value">{{ result.metrics.sustainability_score }}/100</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ result.metrics.sustainability_score }}%"></div>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <span>Green Space per Capita:</span>
+                                <span><strong>{{ "{:.1f}".format(result.metrics.green_space_per_capita) }} m²</strong></span>
+                            </div>
+                            <small class="text-muted">WHO Standard: 9.0 m²</small>
+                            {% if result.metrics.green_space_per_capita < 9 %}
+                                <div class="badge-poor mt-1">{{ "{:.1f}".format(9 - result.metrics.green_space_per_capita) }} m² deficit</div>
+                            {% else %}
+                                <div class="badge-sustainable mt-1">{{ "{:.1f}".format(result.metrics.green_space_per_capita - 9) }} m² surplus</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6"><strong>WHO Compliance:</strong></div>
+                        <div class="col-6">{{ "{:.1f}".format(result.metrics.who_standard_compliance) }}%</div>
+                        <div class="col-6"><strong>Air Quality:</strong></div>
+                        <div class="col-6">{{ "{:.0f}".format(result.city.aqi) }} AQI</div>
+                        <div class="col-6"><strong>Traffic Density:</strong></div>
+                        <div class="col-6">{{ result.city.traffic_density }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Green Space Analysis -->
+            <div class="col-md-4">
+                <div class="metric-card">
+                    <h6 class="gradient-text mb-3"><i class="fas fa-calculator icon-air"></i> Green Space Analysis</h6>
+                    <div class="row g-2">
+                        <div class="col-6"><strong>Current Green Space:</strong></div>
+                        <div class="col-6">{{ "{:.1f}".format(result.city.green_space_area) }} sq km</div>
+                        <div class="col-6"><strong>Required Space:</strong></div>
+                        <div class="col-6">{{ "{:.1f}".format((result.city.population * 9) / 1000000) }} sq km</div>
+                        <div class="col-12">
+                            <strong>Gap/Surplus:</strong>
+                            {% set gap = result.metrics.required_green_space %}
+                            {% if gap > 0 %}
+                                <div class="text-danger">-{{ "{:.1f}".format(gap) }} sq km</div>
+                                <small class="text-muted">({{ "{:.1f}".format((gap/result.city.green_space_area)*100) }}% increase needed)</small>
+                            {% else %}
+                                <div class="text-success">+{{ "{:.1f}".format(-gap) }} sq km surplus</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-6"><strong>New Parks Needed:</strong></div>
+                        <div class="col-6">{{ result.metrics.recommended_parks }}</div>
+                        <div class="col-6"><strong>Trees to Plant:</strong></div>
+                        <div class="col-6">{{ "{:,}".format(result.metrics.recommended_trees) }}</div>
+                        <div class="col-12"><strong>CO₂ Reduction:</strong> {{ "{:.1f}".format(result.metrics.co2_reduction_potential) }} tons/year</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Plan -->
+        <div class="row mt-4 stagger-animation">
+            <div class="col-12">
+                <h6 class="gradient-text mb-3"><i class="fas fa-tasks icon-people"></i> Action Plan</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-0 glass-effect">
+                            <div class="card-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                                <h6 class="mb-0 text-white">🚨 Immediate Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if result.recommendations.immediate_actions %}
+                                    <ul class="list-unstyled">
+                                        {% for action in result.recommendations.immediate_actions %}
+                                        <li class="mb-2"><i class="fas fa-exclamation-triangle text-danger me-2"></i> {{ action }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted">✅ No immediate actions required</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-0 glass-effect">
+                            <div class="card-header" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
+                                <h6 class="mb-0 text-white">⏱️ Short-term (1-2 years)</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    {% for action in result.recommendations.short_term %}
+                                    <li class="mb-2"><i class="fas fa-clock text-warning me-2"></i> {{ action }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card border-0 glass-effect">
+                            <div class="card-header" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <h6 class="mb-0 text-white">🌱 Long-term (3-5 years)</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    {% for action in result.recommendations.long_term %}
+                                    <li class="mb-2"><i class="fas fa-calendar-alt text-success me-2"></i> {{ action }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Action Buttons -->
+<div class="row mt-4 fade-in-up">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg me-2 hover-lift">
+            <i class="fas fa-chart-pie"></i> View Dashboard
+        </a>
+        <a href="{{ url_for('simulate') }}" class="btn btn-info btn-lg me-2 hover-lift">
+            <i class="fas fa-flask"></i> Run Simulations
+        </a>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success dropdown-toggle hover-lift" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> Export Results
+            </button>
+            <ul class="dropdown-menu glass-effect">
+                <li><a class="dropdown-item" href="/export/json"><i class="fas fa-code"></i> JSON Format</a></li>
+                <li><a class="dropdown-item" href="/export/csv"><i class="fas fa-table"></i> CSV Format</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+{% if results|length > 1 %}
+<div class="card mt-4 glass-effect">
+    <div class="card-header">
+        <h5 class="gradient-text"><i class="fas fa-chart-bar icon-city"></i> Summary Statistics</h5>
+    </div>
+    <div class="card-body">
+        <div class="row stagger-animation">
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-success">{{ results|selectattr('metrics.category', 'equalto', 'Sustainable')|list|length }}</div>
+                    <div class="metric-label">🌱 Sustainable Cities</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-warning">{{ results|selectattr('metrics.category', 'equalto', 'Moderate')|list|length }}</div>
+                    <div class="metric-label">⚠️ Moderate Cities</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-danger">{{ results|selectattr('metrics.category', 'equalto', 'Poor')|list|length }}</div>
+                    <div class="metric-label">🚨 Poor Cities</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value text-info">{{ "%.1f"|format((results|sum(attribute='metrics.sustainability_score'))/results|length) }}</div>
+                    <div class="metric-label">📊 Average Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

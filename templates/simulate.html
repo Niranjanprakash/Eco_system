@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}What-If Simulation - EcoPlan{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="fas fa-flask"></i> What-If Scenario Simulation</h2>
+        <p class="text-muted">Simulate different scenarios to see their impact on sustainability metrics.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-sliders-h"></i> Simulation Parameters</h5>
+            </div>
+            <div class="card-body">
+                <form id="simulationForm">
+                    <div class="mb-3">
+                        <label for="citySelect" class="form-label">Select City</label>
+                        <select class="form-select" id="citySelect" name="city_name" required>
+                            <option value="">Choose a city...</option>
+                            {% for result in results %}
+                            <option value="{{ result.city.name }}">{{ result.city.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-tree"></i> Green Space Scenarios</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="greenSpaceIncrease" class="form-label">
+                                    Green Space Increase: <span id="greenSpaceValue">0</span>%
+                                </label>
+                                <input type="range" class="form-range" id="greenSpaceIncrease" 
+                                       name="green_space_increase" min="0" max="100" value="0">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="treePlantation" class="form-label">
+                                    Additional Trees: <span id="treeValue">0</span>
+                                </label>
+                                <input type="range" class="form-range" id="treePlantation" 
+                                       name="tree_plantation" min="0" max="50000" value="0" step="1000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-car"></i> Traffic Scenarios</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="trafficReduction" class="form-label">
+                                    Traffic Reduction: <span id="trafficValue">0</span>%
+                                </label>
+                                <input type="range" class="form-range" id="trafficReduction" 
+                                       name="traffic_reduction" min="0" max="50" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Run Simulation
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetSimulation()">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Simulation Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="simulationResults">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle fa-3x mb-3"></i>
+                        <p>Select a city and adjust parameters to run simulation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current City Overview -->
+<div class="row mt-4" id="cityOverview" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-city"></i> Current City Status</h5>
+            </div>
+            <div class="card-body" id="cityOverviewContent">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Simulation History -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Simulation History</h5>
+            </div>
+            <div class="card-body">
+                <div id="simulationHistory">
+                    <p class="text-muted">No simulations run yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preset Scenarios -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-magic"></i> Preset Scenarios</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <h6 class="text-success">Green City Initiative</h6>
+                                <p class="small">+30% green space, +10,000 trees</p>
+                                <button class="btn btn-outline-success btn-sm" onclick="applyPreset('green')">
+                                    Apply Scenario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h6 class="text-primary">Smart Transport</h6>
+                                <p class="small">-25% traffic, +20% public transport</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="applyPreset('transport')">
+                                    Apply Scenario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <h6 class="text-warning">Balanced Approach</h6>
+                                <p class="small">+15% green, +5,000 trees, -15% traffic</p>
+                                <button class="btn btn-outline-warning btn-sm" onclick="applyPreset('balanced')">
+                                    Apply Scenario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let simulationHistory = [];
+let currentCityData = null;
+
+// Update slider values
+document.getElementById('greenSpaceIncrease').addEventListener('input', function() {
+    document.getElementById('greenSpaceValue').textContent = this.value;
+});
+
+document.getElementById('treePlantation').addEventListener('input', function() {
+    document.getElementById('treeValue').textContent = parseInt(this.value).toLocaleString();
+});
+
+document.getElementById('trafficReduction').addEventListener('input', function() {
+    document.getElementById('trafficValue').textContent = this.value;
+});
+
+// City selection change
+document.getElementById('citySelect').addEventListener('change', function() {
+    const cityName = this.value;
+    if (cityName) {
+        loadCityOverview(cityName);
+    } else {
+        document.getElementById('cityOverview').style.display = 'none';
+    }
+});
+
+function loadCityOverview(cityName) {
+    // Find city data from results
+    const results = {{ results | tojson }};
+    const cityResult = results.find(r => r.city.name === cityName);
+    
+    if (cityResult) {
+        currentCityData = cityResult;
+        const content = `
+            <div class="row">
+                <div class="col-md-3">
+                    <h6>Current Metrics</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Sustainability Score:</strong> ${cityResult.metrics.sustainability_score}</li>
+                        <li><strong>Category:</strong> <span class="badge bg-${getCategoryColor(cityResult.metrics.category)}">${cityResult.metrics.category}</span></li>
+                        <li><strong>Green Space per Capita:</strong> ${cityResult.metrics.green_space_per_capita.toFixed(1)} m²</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Environmental</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>AQI:</strong> ${cityResult.city.aqi}</li>
+                        <li><strong>Green Coverage:</strong> ${cityResult.city.green_coverage_percentage}%</li>
+                        <li><strong>Existing Parks:</strong> ${cityResult.city.existing_parks}</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Recommendations</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Additional Green Space:</strong> ${cityResult.metrics.required_green_space.toFixed(1)} sq km</li>
+                        <li><strong>New Parks:</strong> ${cityResult.metrics.recommended_parks}</li>
+                        <li><strong>Trees to Plant:</strong> ${cityResult.metrics.recommended_trees.toLocaleString()}</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Impact Potential</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>CO₂ Reduction:</strong> ${cityResult.metrics.co2_reduction_potential.toFixed(1)} tons/year</li>
+                        <li><strong>WHO Compliance:</strong> ${cityResult.metrics.who_standard_compliance.toFixed(1)}%</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('cityOverviewContent').innerHTML = content;
+        document.getElementById('cityOverview').style.display = 'block';
+    }
+}
+
+function getCategoryColor(category) {
+    switch(category) {
+        case 'Sustainable': return 'success';
+        case 'Moderate': return 'warning';
+        case 'Poor': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+// Form submission
+document.getElementById('simulationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const scenarios = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (key !== 'city_name' && value !== '0') {
+            scenarios[key] = parseFloat(value);
+        }
+    }
+    
+    const data = {
+        city_name: formData.get('city_name'),
+        scenarios: scenarios
+    };
+    
+    runSimulation(data);
+});
+
+function runSimulation(data) {
+    const resultsDiv = document.getElementById('simulationResults');
+    resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Running simulation...</div>';
+    
+    fetch('/simulate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">${result.error}</div>`;
+        } else {
+            displaySimulationResults(result, data);
+            addToHistory(data, result);
+        }
+    })
+    .catch(error => {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">Simulation failed: ${error.message}</div>`;
+    });
+}
+
+function displaySimulationResults(result, inputData) {
+    const improvements = result.improvements;
+    const newMetrics = result.new_metrics;
+    const originalMetrics = result.original_metrics;
+    
+    const content = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle"></i> Simulation Complete</h6>
+        </div>
+        
+        <!-- Before vs After Comparison -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6><i class="fas fa-balance-scale"></i> Before vs After Comparison</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">BEFORE</h6>
+                        <table class="table table-sm">
+                            <tr><td>Sustainability Score:</td><td><strong>${originalMetrics.sustainability_score}/100</strong></td></tr>
+                            <tr><td>Category:</td><td><span class="badge bg-${getCategoryColor(originalMetrics.category)}">${originalMetrics.category}</span></td></tr>
+                            <tr><td>Green Space per Capita:</td><td><strong>${originalMetrics.green_space_per_capita.toFixed(1)} m²</strong></td></tr>
+                            <tr><td>WHO Compliance:</td><td><strong>${originalMetrics.who_standard_compliance.toFixed(1)}%</strong></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success">AFTER</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Sustainability Score:</td>
+                                <td>
+                                    <strong>${newMetrics.sustainability_score}/100</strong>
+                                    <span class="badge bg-${improvements.sustainability_score_change > 0 ? 'success' : 'secondary'} ms-1">
+                                        ${improvements.sustainability_score_change > 0 ? '+' : ''}${improvements.sustainability_score_change.toFixed(1)}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Category:</td>
+                                <td>
+                                    <span class="badge bg-${getCategoryColor(newMetrics.category)}">${newMetrics.category}</span>
+                                    ${newMetrics.category !== originalMetrics.category ? '<i class="fas fa-arrow-up text-success ms-1"></i>' : ''}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Green Space per Capita:</td>
+                                <td>
+                                    <strong>${newMetrics.green_space_per_capita.toFixed(1)} m²</strong>
+                                    <span class="badge bg-${improvements.green_space_change > 0 ? 'success' : 'secondary'} ms-1">
+                                        ${improvements.green_space_change > 0 ? '+' : ''}${improvements.green_space_change.toFixed(1)}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr><td>WHO Compliance:</td><td><strong>${newMetrics.who_standard_compliance.toFixed(1)}%</strong></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Impact Metrics -->
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-line"></i> Impact Metrics</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 ${improvements.sustainability_score_change > 0 ? 'border-success bg-light' : 'border-secondary'}">
+                            <h4 class="text-${improvements.sustainability_score_change > 0 ? 'success' : 'muted'}">
+                                ${improvements.sustainability_score_change > 0 ? '+' : ''}${improvements.sustainability_score_change.toFixed(1)}
+                            </h4>
+                            <small class="text-muted">Sustainability Score Change</small>
+                            <div class="mt-2">
+                                <small class="text-muted">${originalMetrics.sustainability_score} → ${newMetrics.sustainability_score}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 ${improvements.aqi_change > 0 ? 'border-success bg-light' : 'border-secondary'}">
+                            <h4 class="text-${improvements.aqi_change > 0 ? 'success' : 'muted'}">
+                                ${improvements.aqi_change > 0 ? '-' : ''}${Math.abs(improvements.aqi_change).toFixed(0)}
+                            </h4>
+                            <small class="text-muted">AQI Improvement</small>
+                            <div class="mt-2">
+                                <small class="text-muted">Current AQI Impact</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 ${improvements.green_space_change > 0 ? 'border-success bg-light' : 'border-secondary'}">
+                            <h4 class="text-${improvements.green_space_change > 0 ? 'success' : 'muted'}">
+                                ${improvements.green_space_change > 0 ? '+' : ''}${improvements.green_space_change.toFixed(1)}
+                            </h4>
+                            <small class="text-muted">Green Space per Capita (m²)</small>
+                            <div class="mt-2">
+                                <small class="text-muted">${originalMetrics.green_space_per_capita.toFixed(1)} → ${newMetrics.green_space_per_capita.toFixed(1)} m²</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Scenario Applied -->
+                <div class="mt-3">
+                    <h6>Scenarios Applied:</h6>
+                    <div class="row">
+                        ${Object.keys(inputData.scenarios).map(key => {
+                            const value = inputData.scenarios[key];
+                            const label = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            return `
+                                <div class="col-md-4">
+                                    <div class="alert alert-info py-2">
+                                        <strong>${label}:</strong> ${value}${key.includes('percentage') || key.includes('reduction') || key.includes('increase') ? '%' : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('simulationResults').innerHTML = content;
+}
+
+function addToHistory(inputData, result) {
+    const historyItem = {
+        timestamp: new Date().toLocaleString(),
+        city: inputData.city_name,
+        scenarios: inputData.scenarios,
+        improvements: result.improvements
+    };
+    
+    simulationHistory.unshift(historyItem);
+    updateHistoryDisplay();
+}
+
+function updateHistoryDisplay() {
+    const historyDiv = document.getElementById('simulationHistory');
+    
+    if (simulationHistory.length === 0) {
+        historyDiv.innerHTML = '<p class="text-muted">No simulations run yet.</p>';
+        return;
+    }
+    
+    let content = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Time</th><th>City</th><th>Scenarios</th><th>Score Change</th></tr></thead><tbody>';
+    
+    simulationHistory.slice(0, 5).forEach(item => {
+        const scenarioText = Object.keys(item.scenarios).map(key => {
+            return `${key.replace('_', ' ')}: ${item.scenarios[key]}`;
+        }).join(', ');
+        
+        content += `
+            <tr>
+                <td>${item.timestamp}</td>
+                <td>${item.city}</td>
+                <td><small>${scenarioText}</small></td>
+                <td class="text-${item.improvements.sustainability_score_change > 0 ? 'success' : 'muted'}">
+                    ${item.improvements.sustainability_score_change > 0 ? '+' : ''}${item.improvements.sustainability_score_change.toFixed(1)}
+                </td>
+            </tr>
+        `;
+    });
+    
+    content += '</tbody></table></div>';
+    historyDiv.innerHTML = content;
+}
+
+function applyPreset(type) {
+    const citySelect = document.getElementById('citySelect');
+    if (!citySelect.value) {
+        alert('Please select a city first');
+        return;
+    }
+    
+    switch(type) {
+        case 'green':
+            document.getElementById('greenSpaceIncrease').value = 30;
+            document.getElementById('treePlantation').value = 10000;
+            document.getElementById('trafficReduction').value = 0;
+            break;
+        case 'transport':
+            document.getElementById('greenSpaceIncrease').value = 0;
+            document.getElementById('treePlantation').value = 0;
+            document.getElementById('trafficReduction').value = 25;
+            break;
+        case 'balanced':
+            document.getElementById('greenSpaceIncrease').value = 15;
+            document.getElementById('treePlantation').value = 5000;
+            document.getElementById('trafficReduction').value = 15;
+            break;
+    }
+    
+    // Update display values
+    document.getElementById('greenSpaceValue').textContent = document.getElementById('greenSpaceIncrease').value;
+    document.getElementById('treeValue').textContent = parseInt(document.getElementById('treePlantation').value).toLocaleString();
+    document.getElementById('trafficValue').textContent = document.getElementById('trafficReduction').value;
+}
+
+function resetSimulation() {
+    document.getElementById('simulationForm').reset();
+    document.getElementById('greenSpaceValue').textContent = '0';
+    document.getElementById('treeValue').textContent = '0';
+    document.getElementById('trafficValue').textContent = '0';
+    document.getElementById('simulationResults').innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-info-circle fa-3x mb-3"></i>
+            <p>Select a city and adjust parameters to run simulation</p>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+"""
+Add these routes to app.py for ML functionality
+"""
+
+@app.route('/api/ml_predict', methods=['POST'])
+def ml_predict():
+    """Predict sustainability using ML model"""
+    try:
+        data = request.json
+        city_data = CityData(**data)
+        
+        # ML Prediction
+        ml_score = ml_predictor.predict_sustainability(city_data)
+        
+        # Rule-based score for comparison
+        rule_based_metrics = analyzer.analyze_city(city_data)
+        
+        return jsonify({
+            'ml_prediction': float(ml_score) if ml_score else None,
+            'rule_based_score': rule_based_metrics.sustainability_score,
+            'difference': float(ml_score - rule_based_metrics.sustainability_score) if ml_score else None,
+            'model_trained': ml_predictor.is_trained
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml_feature_importance')
+def ml_feature_importance():
+    """Get ML model feature importance"""
+    importance = ml_predictor.get_feature_importance()
+    if importance:
+        return jsonify({
+            'features': [{'name': f, 'importance': float(i)} for f, i in importance],
+            'model_trained': True
+        })
+    return jsonify({'error': 'Model not trained', 'model_trained': False}), 404
+
+@app.route('/api/train_ml', methods=['POST'])
+def train_ml():
+    """Train ML model on current database"""
+    try:
+        cities_data = db.get_all_cities()
+        if len(cities_data) < 5:
+            return jsonify({'error': 'Need at least 5 cities to train'}), 400
+        
+        cities = []
+        scores = []
+        
+        for city_dict in cities_data:
+            city_data = {k: v for k, v in city_dict.items() if k not in ['id', 'created_at', 'updated_at']}
+            city = CityData(**city_data)
+            metrics = analyzer.analyze_city(city)
+            
+            cities.append(city)
+            scores.append(metrics.sustainability_score)
+        
+        ml_predictor.train(cities, scores)
+        ml_predictor.save_model()
+        
+        return jsonify({
+            'message': 'ML model trained successfully',
+            'cities_count': len(cities),
+            'feature_importance': [{'name': f, 'importance': float(i)} 
+                                  for f, i in ml_predictor.get_feature_importance()]
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

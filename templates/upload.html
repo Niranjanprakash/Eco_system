@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Data - EcoPlan{% endblock %}
+
+{% block content %}
+<div class="row fade-in-up">
+    <div class="col-lg-8 mx-auto">
+        <h2 class="mb-4 gradient-text"><i class="fas fa-cloud-upload-alt icon-air"></i> Upload City Data</h2>
+        
+        <div class="card hover-lift">
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Select CSV or Excel File</label>
+                        <input type="file" class="form-control" id="fileInput" name="file" accept=".csv,.xlsx,.xls" required>
+                        <div class="form-text">📊 Supported formats: CSV, Excel (.xlsx, .xls)</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary hover-lift">
+                        <i class="fas fa-upload"></i> Upload and Analyze
+                    </button>
+                </form>
+                
+                <div id="uploadStatus" class="mt-3"></div>
+            </div>
+        </div>
+        
+        <div class="card mt-4 glass-effect">
+            <div class="card-header">
+                <h5 class="gradient-text"><i class="fas fa-info-circle icon-city"></i> Required Data Format</h5>
+            </div>
+            <div class="card-body">
+                <p>Your file should contain the following columns:</p>
+                <div class="row stagger-animation">
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h6 class="gradient-text mb-3">🏙️ Basic City Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> name</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> area (sq km)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> population</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> population_density</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> built_up_percentage</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h6 class="gradient-text mb-3">🌱 Environmental Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> green_space_area</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> green_coverage_percentage</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> existing_parks</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> tree_coverage</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> aqi</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row stagger-animation">
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h6 class="gradient-text mb-3">💨 Pollution Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> pm25</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> pm10</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> co2_estimation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h6 class="gradient-text mb-3">🚗 Traffic Data:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> traffic_density (Low/Medium/High)</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> vehicle_count</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> public_transport_usage</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert glass-effect mt-3">
+                    <i class="fas fa-lightbulb icon-city me-2"></i> 
+                    <strong>💡 Smart Features:</strong> Missing coordinates will be automatically geocoded using city names. 
+                    Real-time pollution data will be fetched from APIs when available.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4 glass-effect hover-lift">
+            <div class="card-header">
+                <h5 class="gradient-text"><i class="fas fa-download icon-leaf"></i> Sample Template</h5>
+            </div>
+            <div class="card-body text-center">
+                <p>Download a sample CSV template to see the expected format:</p>
+                <button class="btn btn-outline-success hover-lift" onclick="downloadTemplate()">
+                    <i class="fas fa-download"></i> Download Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const fileInput = document.getElementById('fileInput');
+    const statusDiv = document.getElementById('uploadStatus');
+    
+    if (!fileInput.files[0]) {
+        statusDiv.innerHTML = '<div class="alert alert-danger">Please select a file.</div>';
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    
+    statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Uploading and processing...</div>';
+    
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${data.error}</div>`;
+            if (data.details) {
+                statusDiv.innerHTML += `<div class="alert alert-warning"><strong>Details:</strong><ul>`;
+                data.details.forEach(detail => {
+                    statusDiv.innerHTML += `<li>${detail}</li>`;
+                });
+                statusDiv.innerHTML += `</ul></div>`;
+            }
+        } else {
+            statusDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> ${data.message}
+                    <br><strong>Cities loaded:</strong> ${data.cities_count}
+                    <br><strong>Cities:</strong> ${data.cities.join(', ')}
+                </div>
+            `;
+            
+            // Redirect to analysis after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/analyze';
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Upload failed: ${error.message}</div>`;
+    });
+});
+
+function downloadTemplate() {
+    const csvContent = `name,area,population,population_density,built_up_percentage,green_space_area,open_land_area,green_coverage_percentage,existing_parks,tree_coverage,aqi,pm25,pm10,co2_estimation,traffic_density,vehicle_count,public_transport_usage
+Mumbai,603.4,12442373,20634,85,30.2,50.1,15,45,12,156,78,112,2340,High,2800000,45
+Pune,331.3,3124458,9429,70,49.7,82.3,25,78,22,89,45,67,890,Medium,1200000,35`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ecoplan_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

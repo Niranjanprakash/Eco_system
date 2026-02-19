@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Add City - EcoPlan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in-up">
+    <div class="col-lg-10">
+        <div class="text-center mb-4">
+            <h2 class="gradient-text"><i class="fas fa-plus-circle icon-leaf"></i> Add New City</h2>
+            <p class="text-muted">Enter city details and get automatic location & weather data</p>
+        </div>
+        
+        <form id="manualForm" class="stagger-animation">
+            <div class="row g-4">
+                <!-- Basic Information -->
+                <div class="col-md-6">
+                    <div class="card hover-lift">
+                        <div class="card-header">
+                            <h5><i class="fas fa-city icon-city"></i> Basic Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">City Name *</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="name" name="name" required autocomplete="off" placeholder="e.g., Coimbatore">
+                                    <div id="citySuggestions" class="position-absolute w-100 bg-white border rounded shadow" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></div>
+                                </div>
+                                <div id="cityStatus" class="form-text"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="area" class="form-label">Area (sq km) *</label>
+                                        <input type="number" class="form-control" id="area" name="area" step="0.1" required placeholder="100">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="population" class="form-label">Population *</label>
+                                        <input type="number" class="form-control" id="population" name="population" required placeholder="1000000">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="built_up_percentage" class="form-label">Built-up Area (%) *</label>
+                                <input type="number" class="form-control" id="built_up_percentage" name="built_up_percentage" min="0" max="100" required placeholder="60">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Green Space Data -->
+                <div class="col-md-6">
+                    <div class="card hover-lift">
+                        <div class="card-header">
+                            <h5><i class="fas fa-leaf icon-leaf"></i> Green Space Data</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="green_space_area" class="form-label">Green Space Area (sq km) *</label>
+                                <input type="number" class="form-control" id="green_space_area" name="green_space_area" step="0.1" required placeholder="15">
+                            </div>
+                            <div class="mb-3">
+                                <label for="green_coverage_percentage" class="form-label">Green Coverage (%) *</label>
+                                <input type="number" class="form-control" id="green_coverage_percentage" name="green_coverage_percentage" min="0" max="100" required placeholder="25">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="existing_parks" class="form-label">Parks Count</label>
+                                        <input type="number" class="form-control" id="existing_parks" name="existing_parks" min="0" placeholder="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="tree_coverage" class="form-label">Tree Coverage (%)</label>
+                                        <input type="number" class="form-control" id="tree_coverage" name="tree_coverage" min="0" max="100" placeholder="20">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-4 mt-2">
+                <!-- Pollution Data -->
+                <div class="col-md-6">
+                    <div class="card hover-lift">
+                        <div class="card-header">
+                            <h5><i class="fas fa-smog icon-air"></i> Air Quality (Auto-filled)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="aqi" class="form-label">AQI</label>
+                                        <input type="number" class="form-control" id="aqi" name="aqi" min="0" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="pm25" class="form-label">PM2.5</label>
+                                        <input type="number" class="form-control" id="pm25" name="pm25" step="0.1" min="0" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="pm10" class="form-label">PM10</label>
+                                        <input type="number" class="form-control" id="pm10" name="pm10" step="0.1" min="0" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Traffic Data -->
+                <div class="col-md-6">
+                    <div class="card hover-lift">
+                        <div class="card-header">
+                            <h5><i class="fas fa-car icon-people"></i> Traffic & Transport</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="traffic_density" class="form-label">Traffic Density *</label>
+                                <select class="form-select" id="traffic_density" name="traffic_density" required>
+                                    <option value="">Select density</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="vehicle_count" class="form-label">Vehicle Count</label>
+                                <input type="number" class="form-control" id="vehicle_count" name="vehicle_count" min="0" placeholder="50000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg hover-lift">
+                    <i class="fas fa-chart-line"></i> Analyze City
+                </button>
+            </div>
+        </form>
+        
+        <div id="inputStatus" class="mt-4"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-calculate population density
+document.getElementById('population').addEventListener('input', calculateDensity);
+document.getElementById('area').addEventListener('input', calculateDensity);
+
+// Auto-fetch city data when city name is entered
+let cityFetchTimeout;
+let suggestionTimeout;
+const cityInput = document.getElementById('name');
+const suggestionsDiv = document.getElementById('citySuggestions');
+const statusDiv = document.getElementById('cityStatus');
+
+// Handle city input with autocomplete
+cityInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    
+    // Clear previous timeouts
+    clearTimeout(cityFetchTimeout);
+    clearTimeout(suggestionTimeout);
+    
+    if (query.length < 2) {
+        suggestionsDiv.style.display = 'none';
+        statusDiv.innerHTML = '';
+        return;
+    }
+    
+    // Show suggestions after short delay
+    suggestionTimeout = setTimeout(() => {
+        fetchCitySuggestions(query);
+    }, 300);
+    
+    // Fetch full city data after longer delay
+    cityFetchTimeout = setTimeout(() => {
+        fetchCityData(query);
+    }, 1000);
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(e) {
+    if (!cityInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+        suggestionsDiv.style.display = 'none';
+    }
+});
+
+// Fetch city suggestions for autocomplete
+function fetchCitySuggestions(query) {
+    fetch(`/api/city_suggestions/${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.suggestions && data.suggestions.length > 0) {
+            let html = '';
+            data.suggestions.forEach(suggestion => {
+                html += `
+                    <div class="suggestion-item p-2 border-bottom cursor-pointer" 
+                         style="cursor: pointer;" 
+                         data-city="${suggestion.city}" 
+                         data-display="${suggestion.display}"
+                         data-lat="${suggestion.lat}" 
+                         data-lon="${suggestion.lon}">
+                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                        ${suggestion.display}
+                    </div>
+                `;
+            });
+            suggestionsDiv.innerHTML = html;
+            suggestionsDiv.style.display = 'block';
+            
+            // Add click handlers to suggestions
+            suggestionsDiv.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const cityName = this.dataset.city;
+                    const displayName = this.dataset.display;
+                    
+                    cityInput.value = cityName;
+                    suggestionsDiv.style.display = 'none';
+                    
+                    // Immediately fetch city data
+                    fetchCityData(cityName);
+                });
+                
+                // Add hover effect
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'white';
+                });
+            });
+        } else {
+            suggestionsDiv.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching suggestions:', error);
+        suggestionsDiv.style.display = 'none';
+    });
+}
+
+// Fetch full city data (coordinates and weather)
+function fetchCityData(cityName) {
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i> Fetching location and weather data...';
+    
+    fetch(`/api/fetch_city_data/${encodeURIComponent(cityName)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            statusDiv.innerHTML = `<span class="text-warning"><i class="fas fa-exclamation-triangle"></i> ${data.error}</span>`;
+        } else {
+            let statusText = `<span class="text-success"><i class="fas fa-map-marker-alt"></i> Location found: ${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}</span>`;
+            
+            if (data.weather_data_found) {
+                statusText += `<br><span class="text-info"><i class="fas fa-cloud"></i> Weather data loaded - AQI: ${Math.round(data.aqi)}, PM2.5: ${data.pm25.toFixed(1)}</span>`;
+                
+                // Auto-fill pollution fields
+                document.getElementById('aqi').value = Math.round(data.aqi);
+                document.getElementById('pm25').value = data.pm25.toFixed(1);
+                document.getElementById('pm10').value = data.pm10.toFixed(1);
+            } else {
+                statusText += `<br><span class="text-muted"><i class="fas fa-info-circle"></i> Weather data not available</span>`;
+            }
+            
+            statusDiv.innerHTML = statusText;
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Error fetching data: ${error.message}</span>`;
+    });
+}
+
+function calculateDensity() {
+    const population = parseFloat(document.getElementById('population').value) || 0;
+    const area = parseFloat(document.getElementById('area').value) || 0;
+    
+    if (population > 0 && area > 0) {
+        window.calculatedDensity = (population / area).toFixed(1);
+    }
+}
+
+document.getElementById('manualForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Convert form data to object
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') {
+            // Convert numeric fields
+            if (['area', 'population', 'population_density', 'built_up_percentage', 
+                 'green_space_area', 'open_land_area', 'green_coverage_percentage', 
+                 'existing_parks', 'tree_coverage', 'aqi', 'pm25', 'pm10', 
+                 'co2_estimation', 'vehicle_count', 'public_transport_usage'].includes(key)) {
+                data[key] = parseFloat(value);
+            } else {
+                data[key] = value;
+            }
+        }
+    }
+    
+    // Calculate population density
+    const population = parseFloat(document.getElementById('population').value) || 0;
+    const area = parseFloat(document.getElementById('area').value) || 0;
+    data.population_density = population > 0 && area > 0 ? population / area : 0;
+    
+    // Set defaults for missing values
+    data.existing_parks = data.existing_parks || 0;
+    data.tree_coverage = data.tree_coverage || 0;
+    data.aqi = data.aqi || 0;
+    data.pm25 = data.pm25 || 0;
+    data.pm10 = data.pm10 || 0;
+    data.vehicle_count = data.vehicle_count || 0;
+    data.open_land_area = 0;
+    data.co2_estimation = 0;
+    data.public_transport_usage = 0;
+    
+    const statusDiv = document.getElementById('inputStatus');
+    statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Processing city data...</div>';
+    
+    fetch('/manual_input', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> ${result.error}</div>`;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> ${result.message}
+                    <br><strong>City:</strong> ${result.city_name}
+                </div>
+            `;
+            
+            // Redirect to analysis after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/analyze';
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Error: ${error.message}</div>`;
+    });
+});
+</script>
+{% endblock %}

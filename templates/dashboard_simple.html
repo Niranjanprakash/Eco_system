@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - EcoPlan{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4"><i class="fas fa-chart-pie"></i> EcoPlan Dashboard</h2>
+        <p class="text-muted">Comprehensive analysis of urban sustainability metrics</p>
+        
+        <!-- Data Sources Info -->
+        {% if sources %}
+        <div class="alert alert-info">
+            <h6><i class="fas fa-database"></i> Data Sources ({{ total_cities }} total cities):</h6>
+            <div class="row">
+                {% for source in sources %}
+                <div class="col-md-4 mb-2">
+                    <small>
+                        <strong>{{ source.type.replace('_', ' ').title() }}:</strong>
+                        {% if source.type == 'file_upload' %}
+                            {{ source.filename }} ({{ source.count }} cities)
+                        {% elif source.type == 'manual_input' %}
+                            {{ source.city_name }} ({{ source.timestamp }})
+                        {% elif source.type == 'sample_data' %}
+                            {{ source.count }} sample cities ({{ source.timestamp }})
+                        {% endif %}
+                    </small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ results|length }}</h3>
+                <p class="mb-0"><i class="fas fa-city"></i> Cities Analyzed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                {% set sustainable_count = results|selectattr('metrics.category', 'equalto', 'Sustainable')|list|length %}
+                <h3>{{ sustainable_count }}</h3>
+                <p class="mb-0"><i class="fas fa-leaf"></i> Sustainable</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                {% set moderate_count = results|selectattr('metrics.category', 'equalto', 'Moderate')|list|length %}
+                <h3>{{ moderate_count }}</h3>
+                <p class="mb-0"><i class="fas fa-balance-scale"></i> Moderate</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                {% set poor_count = results|selectattr('metrics.category', 'equalto', 'Poor')|list|length %}
+                <h3>{{ poor_count }}</h3>
+                <p class="mb-0"><i class="fas fa-exclamation-triangle"></i> Poor</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- City Analysis Cards -->
+<div class="row">
+    {% for result in results %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-city"></i> {{ result.city.name }}</h5>
+                <span class="badge fs-6 bg-{{ 'success' if result.metrics.category == 'Sustainable' else 'warning' if result.metrics.category == 'Moderate' else 'danger' }}">
+                    {{ result.metrics.category }}
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Key Metrics -->
+                <div class="row mb-3">
+                    <div class="col-4 text-center">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-1">{{ "%.1f"|format(result.metrics.sustainability_score) }}</h4>
+                            <small class="text-muted">Sustainability Score</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="border-end">
+                            <h4 class="text-success mb-1">{{ "%.1f"|format(result.metrics.green_space_per_capita) }}</h4>
+                            <small class="text-muted">m² per capita</small>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <h4 class="text-info mb-1">{{ "%.0f"|format(result.metrics.who_standard_compliance) }}%</h4>
+                        <small class="text-muted">WHO Compliance</small>
+                    </div>
+                </div>
+
+                <!-- Environmental Indicators -->
+                <div class="mb-3">
+                    <h6><i class="fas fa-leaf"></i> Environmental Indicators</h6>
+                    
+                    <!-- Green Coverage -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <small>Green Coverage</small>
+                            <small><strong>{{ result.city.green_coverage_percentage }}%</strong></small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: {{ result.city.green_coverage_percentage }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Air Quality -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <small>Air Quality (AQI)</small>
+                            <small><strong>{{ result.city.aqi }}</strong></small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% set aqi_percentage = (200 - result.city.aqi) / 2 %}
+                            {% set aqi_width = [100, [0, aqi_percentage]|max]|min %}
+                            <div class="progress-bar bg-{{ 'success' if result.city.aqi <= 50 else 'warning' if result.city.aqi <= 100 else 'danger' }}" 
+                                 style="width: {{ aqi_width }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Traffic Density -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <small>Traffic Density</small>
+                            <small><strong>{{ result.city.traffic_density }}</strong></small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            {% set traffic_width = 33 if result.city.traffic_density == 'Low' else 66 if result.city.traffic_density == 'Medium' else 100 %}
+                            <div class="progress-bar bg-{{ 'success' if result.city.traffic_density == 'Low' else 'warning' if result.city.traffic_density == 'Medium' else 'danger' }}" 
+                                 style="width: {{ traffic_width }}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- City Stats -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <h6><i class="fas fa-info-circle"></i> City Stats</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Population:</strong> {{ "{:,}".format(result.city.population) }}</li>
+                            <li><strong>Area:</strong> {{ result.city.area }} sq km</li>
+                            <li><strong>Density:</strong> {{ "{:,.0f}".format(result.city.population_density) }}/sq km</li>
+                            <li><strong>Built-up:</strong> {{ result.city.built_up_percentage }}%</li>
+                        </ul>
+                    </div>
+                    <div class="col-6">
+                        <h6><i class="fas fa-tasks"></i> Recommendations</h6>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-tree text-success"></i> <strong>{{ "{:,}".format(result.metrics.recommended_trees) }}</strong> trees</li>
+                            <li><i class="fas fa-seedling text-info"></i> <strong>{{ result.metrics.recommended_parks }}</strong> new parks</li>
+                            <li><i class="fas fa-leaf text-warning"></i> <strong>{{ "%.1f"|format(result.metrics.co2_reduction_potential) }}</strong> tons CO₂ reduction</li>
+                            <li><i class="fas fa-plus-circle text-primary"></i> <strong>{{ "%.1f"|format(result.metrics.required_green_space) }}</strong> sq km green space</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Plan Summary -->
+                <div class="accordion" id="accordion{{ loop.index }}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                    data-bs-target="#collapse{{ loop.index }}" aria-expanded="false">
+                                <i class="fas fa-list-ul me-2"></i> View Action Plan
+                            </button>
+                        </h2>
+                        <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" 
+                             data-bs-parent="#accordion{{ loop.index }}">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    {% if result.recommendations.immediate_actions %}
+                                    <div class="col-md-4">
+                                        <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Immediate</h6>
+                                        <ul class="small">
+                                            {% for action in result.recommendations.immediate_actions %}
+                                            <li>{{ action }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="col-md-4">
+                                        <h6 class="text-warning"><i class="fas fa-clock"></i> Short-term</h6>
+                                        <ul class="small">
+                                            {% for action in result.recommendations.short_term %}
+                                            <li>{{ action }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <h6 class="text-success"><i class="fas fa-calendar-alt"></i> Long-term</h6>
+                                        <ul class="small">
+                                            {% for action in result.recommendations.long_term %}
+                                            <li>{{ action }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Comparison Table -->
+{% if results|length > 1 %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-table"></i> City Comparison</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Rank</th>
+                                <th>City</th>
+                                <th>Score</th>
+                                <th>Category</th>
+                                <th>Population</th>
+                                <th>Green Space</th>
+                                <th>AQI</th>
+                                <th>WHO Compliance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results|sort(attribute='metrics.sustainability_score', reverse=true) %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if loop.index <= 3 else 'secondary' }}">
+                                        #{{ loop.index }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ result.city.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if result.metrics.sustainability_score >= 70 else 'warning' if result.metrics.sustainability_score >= 40 else 'danger' }}">
+                                        {{ "%.1f"|format(result.metrics.sustainability_score) }}
+                                    </span>
+                                </td>
+                                <td>{{ result.metrics.category }}</td>
+                                <td>{{ "{:,}".format(result.city.population) }}</td>
+                                <td>{{ "%.1f"|format(result.metrics.green_space_per_capita) }} m²</td>
+                                <td>{{ result.city.aqi }}</td>
+                                <td>{{ "%.0f"|format(result.metrics.who_standard_compliance) }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Maps Section -->
+{% if maps.city_map or maps.multi_city_map %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map"></i> Geographic Overview</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 500px; overflow: hidden;">
+                    {% if maps.city_map %}
+                        {{ maps.city_map|safe }}
+                    {% elif maps.multi_city_map %}
+                        {{ maps.multi_city_map|safe }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Action Buttons -->
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('simulate') }}" class="btn btn-info btn-lg me-2">
+            <i class="fas fa-flask"></i> Run What-If Simulations
+        </a>
+        <a href="{{ url_for('analyze') }}" class="btn btn-secondary btn-lg me-2">
+            <i class="fas fa-sync-alt"></i> Refresh Analysis
+        </a>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/export/json">JSON Format</a></li>
+                <li><a class="dropdown-item" href="/export/csv">CSV Format</a></li>
+            </ul>
+        </div>
+        <button class="btn btn-warning btn-lg ms-2" onclick="clearAllData()">
+            <i class="fas fa-trash"></i> Clear All Data
+        </button>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-lg ms-2">
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+
+<!-- SDG Alignment Footer -->
+<div class="alert alert-info mt-4" role="alert">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h6><i class="fas fa-globe"></i> UN SDG-11 Alignment</h6>
+            <p class="mb-0">This analysis supports <strong>Sustainable Development Goal 11: Sustainable Cities and Communities</strong> by providing data-driven insights for urban planning and environmental improvement.</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <div class="badge bg-primary fs-6 p-3">
+                <i class="fas fa-check-circle"></i> SDG-11 Compliant
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth animations to progress bars
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.transition = 'width 1s ease-in-out';
+            bar.style.width = width;
+        }, 100);
+    });
+    
+    // Add hover effects to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 6px 12px rgba(0,0,0,0.15)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+});
+
+// Clear all data function
+function clearAllData() {
+    if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+        fetch('/clear_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            window.location.href = '/';
+        })
+        .catch(error => {
+            alert('Error clearing data: ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}

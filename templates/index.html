@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section fade-in-up">
+    <h1 class="hero-title">
+        <i class="fas fa-leaf icon-leaf"></i> EcoPlan
+    </h1>
+    <p class="hero-subtitle">AI-Based Urban Green Space & Sustainability Planning Assistant</p>
+    <p class="text-muted">Analyze urban data and get actionable recommendations to improve green spaces, environmental quality, and overall sustainability.</p>
+        
+    <!-- Current Data Status -->
+    {% if data_status.total_cities > 0 %}
+    <div class="alert alert-success glass-effect mt-3">
+        <h6><i class="fas fa-database icon-city"></i> Current Data Status</h6>
+        <p class="mb-0">
+            <span class="metric-value">{{ data_status.total_cities }}</span> cities loaded | 
+            <span class="metric-value">{{ data_status.total_results }}</span> analyzed | 
+            <span class="metric-value">{{ data_status.sources_count }}</span> data sources
+        </p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-success mt-2">
+            <i class="fas fa-chart-pie"></i> View Dashboard
+        </a>
+    </div>
+    {% else %}
+    <div class="alert alert-info glass-effect mt-3">
+        <p class="mb-0"><i class="fas fa-info-circle icon-air"></i> No data loaded yet. Start by uploading data, entering manually, or loading sample data.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Action Cards -->
+<div class="row mt-5 stagger-animation">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 hover-lift">
+            <div class="card-body text-center">
+                <i class="fas fa-cloud-upload-alt fa-3x icon-air mb-3"></i>
+                <h5 class="card-title gradient-text">Upload Data</h5>
+                <p class="card-text">Upload CSV or Excel files with city data for comprehensive analysis.</p>
+                <a href="{{ url_for('upload_data') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload File
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 hover-lift">
+            <div class="card-body text-center">
+                <i class="fas fa-plus-circle fa-3x icon-leaf mb-3"></i>
+                <h5 class="card-title gradient-text">Manual Input</h5>
+                <p class="card-text">Enter city data manually for quick analysis and recommendations.</p>
+                <a href="{{ url_for('manual_input') }}" class="btn btn-success">
+                    <i class="fas fa-keyboard"></i> Enter Data
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 hover-lift">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x icon-people mb-3"></i>
+                <h5 class="card-title gradient-text">Sample Data</h5>
+                <p class="card-text">Try the system with pre-loaded sample data from Indian cities.</p>
+                <button class="btn btn-info" onclick="loadSampleData()">
+                    <i class="fas fa-play"></i> Load Sample
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Features -->
+<div class="row mt-5">
+    <div class="col-lg-10 mx-auto">
+        <h3 class="text-center mb-4 gradient-text">Key Features</h3>
+        <div class="row stagger-animation">
+            <div class="col-md-6 mb-4">
+                <div class="metric-card hover-lift">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-tree icon-leaf fa-2x me-3"></i>
+                        <div>
+                            <h6 class="gradient-text mb-1">Green Space Assessment</h6>
+                            <small class="text-muted">Calculate green space per capita and WHO compliance</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="metric-card hover-lift">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-lungs icon-air fa-2x me-3"></i>
+                        <div>
+                            <h6 class="gradient-text mb-1">Air Quality Analysis</h6>
+                            <small class="text-muted">AQI categorization and pollution hotspot detection</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="metric-card hover-lift">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-car icon-people fa-2x me-3"></i>
+                        <div>
+                            <h6 class="gradient-text mb-1">Traffic Impact Assessment</h6>
+                            <small class="text-muted">Analyze traffic density and transport sustainability</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="metric-card hover-lift">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-lightbulb icon-city fa-2x me-3"></i>
+                        <div>
+                            <h6 class="gradient-text mb-1">Smart Recommendations</h6>
+                            <small class="text-muted">AI-powered suggestions for urban planning improvements</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Getting Started -->
+<div class="card mt-5 glass-effect" role="alert">
+    <div class="card-body">
+        <h6 class="gradient-text mb-3"><i class="fas fa-rocket icon-city"></i> Getting Started</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <ol class="mb-0">
+                    <li class="mb-2">📊 Upload your city data (CSV/Excel) or enter manually</li>
+                    <li class="mb-2">🎯 View comprehensive analysis and sustainability scoring</li>
+                    <li class="mb-2">📈 Explore interactive dashboard with maps and charts</li>
+                </ol>
+            </div>
+            <div class="col-md-6">
+                <ol start="4" class="mb-0">
+                    <li class="mb-2">💡 Get actionable recommendations for improvement</li>
+                    <li class="mb-2">🔮 Simulate "what-if" scenarios and export reports</li>
+                    <li class="mb-2">🌱 Build sustainable cities with AI insights</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadSampleData() {
+    fetch('/sample_data')
+        .then(response => response.json())
+        .then(data => {
+            // Store sample data and redirect to analysis
+            sessionStorage.setItem('sampleData', JSON.stringify(data));
+            
+            // Create form data to simulate file upload
+            const formData = new FormData();
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            formData.append('sample', 'true');
+            
+            // Redirect to analysis
+            window.location.href = '/analyze';
+        })
+        .catch(error => {
+            console.error('Error loading sample data:', error);
+            alert('Error loading sample data. Please try again.');
+        });
+}
+</script>
+{% endblock %}
