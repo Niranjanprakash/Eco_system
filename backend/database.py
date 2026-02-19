@@ -8,11 +8,11 @@ import os
 class Database:
     def __init__(self):
         # Use environment variables for production, fallback to local for dev
-        self.host = os.getenv('DB_HOST', 'localhost')
-        self.database = os.getenv('DB_NAME', 'Eco_system_db')
-        self.user = os.getenv('DB_USER', 'root')
-        self.password = os.getenv('DB_PASSWORD', 'Pvbn@7738')
-        self.port = int(os.getenv('DB_PORT', '3306'))
+        self.host = os.getenv('MYSQLHOST', 'localhost')
+        self.database = os.getenv('MYSQLDATABASE', 'Eco_system_db')
+        self.user = os.getenv('MYSQLUSER', 'root')
+        self.password = os.getenv('MYSQLPASSWORD', 'Pvbn@7738')
+        self.port = int(os.getenv('MYSQLPORT', '3306'))
         self._ensure_database_exists()
         self.init_database()
     
