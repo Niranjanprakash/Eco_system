@@ -7,14 +7,19 @@ import os
 
 class Database:
     def __init__(self):
-        # Use environment variables for production, fallback to local for dev
-        self.host = os.getenv('MYSQLHOST', 'localhost')
-        self.database = os.getenv('MYSQLDATABASE', 'Eco_system_db')
-        self.user = os.getenv('MYSQLUSER', 'root')
-        self.password = os.getenv('MYSQLPASSWORD', 'Pvbn@7738')
-        self.port = int(os.getenv('MYSQLPORT', '3306'))
-        self._ensure_database_exists()
+
+        # Railway MySQL Environment Variables
+        self.host = os.environ.get("MYSQLHOST")
+        self.database = os.environ.get("MYSQLDATABASE")
+        self.user = os.environ.get("MYSQLUSER")
+        self.password = os.environ.get("MYSQLPASSWORD")
+        self.port = int(os.environ.get("MYSQLPORT", 3306))
+
+        print("DB HOST:", self.host)   # Debug log for Render
+
+        self.ensure_database_exists()
         self.init_database()
+
     
     def _ensure_database_exists(self):
         """Create database if it doesn't exist"""
