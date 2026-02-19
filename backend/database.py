@@ -1,5 +1,5 @@
-import mysql.connector
-from mysql.connector import Error
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime
 from typing import Dict, List, Optional
 import json
@@ -7,50 +7,32 @@ import os
 
 class Database:
     def __init__(self):
-
-        # Railway MySQL Environment Variables
-        self.host = os.environ.get("MYSQLHOST")
-        self.database = os.environ.get("MYSQLDATABASE")
-        self.user = os.environ.get("MYSQLUSER")
-        self.password = os.environ.get("MYSQLPASSWORD")
-        self.port = int(os.environ.get("MYSQLPORT", 3306))
-
-        print("DB HOST:", self.host)   # Debug log for Render
-
-        self.ensure_database_exists()
+        # Use DATABASE_URL from Render or individual params
+        self.database_url = os.getenv('DATABASE_URL')
+        if not self.database_url:
+            # Fallback to individual params for local dev
+            self.host = os.getenv('PGHOST', 'localhost')
+            self.database = os.getenv('PGDATABASE', 'ecoplan')
+            self.user = os.getenv('PGUSER', 'postgres')
+            self.password = os.getenv('PGPASSWORD', 'postgres')
+            self.port = int(os.getenv('PGPORT', '5432'))
         self.init_database()
-
-    
-    def _ensure_database_exists(self):
-        """Create database if it doesn't exist"""
-        try:
-            conn = mysql.connector.connect(
-                host=self.host,
-                user=self.user,
-                password=self.password,
-                port=self.port
-            )
-            cursor = conn.cursor()
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.database}")
-            cursor.close()
-            conn.close()
-            print(f"[OK] Database '{self.database}' ready")
-        except Error as e:
-            print(f"[X] Error ensuring database exists: {e}")
     
     def get_connection(self):
         try:
-            conn = mysql.connector.connect(
-                host=self.host,
-                database=self.database,
-                user=self.user,
-                password=self.password,
-                port=self.port
-            )
+            if self.database_url:
+                conn = psycopg2.connect(self.database_url)
+            else:
+                conn = psycopg2.connect(
+                    host=self.host,
+                    database=self.database,
+                    user=self.user,
+                    password=self.password,
+                    port=self.port
+                )
             return conn
-        except Error as e:
+        except Exception as e:
             print(f"[X] Database connection error: {e}")
-            print(f"  Host: {self.host}, Database: {self.database}, User: {self.user}")
             return None
     
     def init_database(self):
@@ -63,44 +45,44 @@ class Database:
         # Cities table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS cities (
-                id INT AUTO_INCREMENT PRIMARY KEY,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
                 area FLOAT NOT NULL,
-                population INT NOT NULL,
+                population INTEGER NOT NULL,
                 population_density FLOAT,
                 built_up_percentage FLOAT,
                 green_space_area FLOAT,
                 open_land_area FLOAT,
                 green_coverage_percentage FLOAT,
-                existing_parks INT,
+                existing_parks INTEGER,
                 tree_coverage FLOAT,
                 aqi FLOAT,
                 pm25 FLOAT,
                 pm10 FLOAT,
                 co2_estimation FLOAT,
                 traffic_density VARCHAR(50),
-                vehicle_count INT,
+                vehicle_count INTEGER,
                 public_transport_usage FLOAT,
                 latitude FLOAT,
                 longitude FLOAT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
         # Analysis results table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS analysis_results (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                city_id INT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                city_id INTEGER NOT NULL,
                 sustainability_score FLOAT,
                 category VARCHAR(100),
                 badge_level VARCHAR(100),
                 green_space_per_capita FLOAT,
                 who_compliance FLOAT,
                 required_green_space FLOAT,
-                recommended_parks INT,
-                recommended_trees INT,
+                recommended_parks INTEGER,
+                recommended_trees INTEGER,
                 co2_reduction_potential FLOAT,
                 score_components TEXT,
                 sustainability_debt TEXT,
@@ -112,8 +94,8 @@ class Database:
         # Simulations table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS simulations (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                city_id INT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                city_id INTEGER NOT NULL,
                 simulation_type VARCHAR(100),
                 parameters TEXT,
                 results TEXT,
@@ -125,8 +107,8 @@ class Database:
         # Recommendations table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS recommendations (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                city_id INT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                city_id INTEGER NOT NULL,
                 category VARCHAR(100),
                 priority VARCHAR(50),
                 title VARCHAR(255),
@@ -142,7 +124,6 @@ class Database:
         cursor.close()
         conn.close()
     
-    # City operations
     def add_city(self, city_data: Dict) -> int:
         conn = self.get_connection()
         if not conn:
@@ -159,12 +140,13 @@ class Database:
                  traffic_density, vehicle_count, public_transport_usage,
                  latitude, longitude)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
+                ON CONFLICT (name) DO UPDATE SET
                 area=%s, population=%s, population_density=%s, built_up_percentage=%s,
                 green_space_area=%s, open_land_area=%s, green_coverage_percentage=%s,
                 existing_parks=%s, tree_coverage=%s, aqi=%s, pm25=%s, pm10=%s,
                 co2_estimation=%s, traffic_density=%s, vehicle_count=%s,
                 public_transport_usage=%s, latitude=%s, longitude=%s
+                RETURNING id
             ''', (
                 city_data.get('name'),
                 city_data.get('area'),
@@ -206,10 +188,10 @@ class Database:
                 city_data.get('longitude')
             ))
             
-            city_id = cursor.lastrowid
+            city_id = cursor.fetchone()[0]
             conn.commit()
             return city_id
-        except Error as e:
+        except Exception as e:
             print(f"Error adding city: {e}")
             return 0
         finally:
@@ -221,24 +203,24 @@ class Database:
         if not conn:
             return None
         
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('SELECT * FROM cities WHERE name = %s', (city_name,))
         row = cursor.fetchone()
         cursor.close()
         conn.close()
-        return row
+        return dict(row) if row else None
     
     def get_all_cities(self) -> List[Dict]:
         conn = self.get_connection()
         if not conn:
             return []
         
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('SELECT * FROM cities ORDER BY created_at DESC')
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-        return rows
+        return [dict(row) for row in rows]
     
     def delete_city(self, city_name: str):
         conn = self.get_connection()
@@ -262,9 +244,7 @@ class Database:
         conn.commit()
         cursor.close()
         conn.close()
-        conn.close()
     
-    # Analysis operations
     def save_analysis(self, city_id: int, analysis_data: Dict):
         conn = self.get_connection()
         if not conn:
@@ -295,7 +275,7 @@ class Database:
                 json.dumps(analysis_data.get('sustainability_debt', {}))
             ))
             conn.commit()
-        except Error as e:
+        except Exception as e:
             print(f"Error saving analysis: {e}")
         finally:
             cursor.close()
@@ -306,7 +286,7 @@ class Database:
         if not conn:
             return None
         
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
             SELECT * FROM analysis_results 
             WHERE city_id = %s 
@@ -318,7 +298,7 @@ class Database:
         conn.close()
         
         if row:
-            # Map database fields to SustainabilityMetrics fields
+            row = dict(row)
             return {
                 'green_space_per_capita': row.get('green_space_per_capita', 0),
                 'who_standard_compliance': row.get('who_compliance', 0),
@@ -334,7 +314,6 @@ class Database:
             }
         return None
     
-    # Simulation operations
     def save_simulation(self, city_id: int, sim_type: str, parameters: Dict, results: Dict):
         conn = self.get_connection()
         if not conn:
@@ -348,7 +327,7 @@ class Database:
                 VALUES (%s, %s, %s, %s)
             ''', (city_id, sim_type, json.dumps(parameters), json.dumps(results)))
             conn.commit()
-        except Error as e:
+        except Exception as e:
             print(f"Error saving simulation: {e}")
         finally:
             cursor.close()
@@ -359,7 +338,7 @@ class Database:
         if not conn:
             return []
         
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
             SELECT * FROM simulations 
             WHERE city_id = %s 
@@ -369,12 +348,14 @@ class Database:
         cursor.close()
         conn.close()
         
+        result = []
         for row in rows:
+            row = dict(row)
             row['parameters'] = json.loads(row['parameters']) if row['parameters'] else {}
             row['results'] = json.loads(row['results']) if row['results'] else {}
-        return rows
+            result.append(row)
+        return result
     
-    # Recommendation operations
     def save_recommendations(self, city_id: int, recommendations: List):
         conn = self.get_connection()
         if not conn:
@@ -406,7 +387,7 @@ class Database:
                         VALUES (%s, %s, %s, %s, %s, %s)
                     ''', (city_id, 'General', 'Medium', 'Recommendation', str(rec), 5.0))
             conn.commit()
-        except Error as e:
+        except Exception as e:
             print(f"Error saving recommendations: {e}")
         finally:
             cursor.close()
@@ -417,7 +398,7 @@ class Database:
         if not conn:
             return []
         
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
             SELECT * FROM recommendations 
             WHERE city_id = %s 
@@ -426,4 +407,4 @@ class Database:
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-        return rows
+        return [dict(row) for row in rows]
