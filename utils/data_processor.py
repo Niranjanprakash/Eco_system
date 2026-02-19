@@ -45,10 +45,11 @@ class DataProcessor:
         numeric_columns = df_clean.select_dtypes(include=[np.number]).columns
         df_clean[numeric_columns] = df_clean[numeric_columns].fillna(0)
         
-        # Clean text columns
+        # Clean text columns ONLY (not numeric)
         if 'traffic_density' in df_clean.columns:
-            df_clean['traffic_density'] = df_clean['traffic_density'].str.title()
-            df_clean['traffic_density'] = df_clean['traffic_density'].fillna('Medium')
+            # Convert to string first, then apply .str methods
+            df_clean['traffic_density'] = df_clean['traffic_density'].astype(str).str.title()
+            df_clean['traffic_density'] = df_clean['traffic_density'].replace('Nan', 'Medium')
         
         # Calculate derived fields if missing
         if 'population_density' not in df_clean.columns and 'population' in df_clean.columns and 'area' in df_clean.columns:
